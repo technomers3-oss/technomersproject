@@ -49,18 +49,20 @@ def lambda_handler(event, context):
 ```
 CDN
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/WEEK-7-LAMBDA.pdf
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/WEEK-7-LAMBDA.pdf](https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/WEEK-7-LAMBDA.pdf)
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-8.pdf
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-8.pdf](https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-8.pdf)
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week9.pdf
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/WEEK-10.pdf
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week9.pdf](
+https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week9.pdf)
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/Experiment-11.pdf
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/WEEK-10.pdf](https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/WEEK-10%20.pdf)
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-12.pdf
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/Experiment-11.pdf](https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/Experiment-11.pdf)
 
-https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-13.pdf
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-12.pdf](https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-12.pdf)
 
-https://scam-pied.vercel.app/
+[https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-13.pdf](https://cdn.jsdelivr.net/gh/technomers3-oss/technomersproject@main/week-13.pdf)
+
+[https://scam-pied.vercel.app/](https://scam-pied.vercel.app/)
